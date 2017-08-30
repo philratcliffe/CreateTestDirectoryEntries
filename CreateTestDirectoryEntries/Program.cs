@@ -40,10 +40,13 @@ namespace CreateTestDirectoryEntries
                 for (var i = 0; i < numberOfCertsToWriteInEachBase; i++)
                     try
                     {
-                        var rootEntry = new DirectoryEntry("LDAP://" + server + "/" + baseDn);
-                        rootEntry.Username = "CN=admin,O=Red Kestrel";
-                        rootEntry.Password = "Top111Secret";
-                        rootEntry.AuthenticationType = AuthenticationTypes.None;
+                        var rootEntry =
+                            new DirectoryEntry("LDAP://" + server + "/" + baseDn)
+                            {
+                                Username = "CN=admin,O=Red Kestrel",
+                                Password = "Top111Secret",
+                                AuthenticationType = AuthenticationTypes.None
+                            };
                         var name = GenerateRandomName();
 
                         var r = new Random();
