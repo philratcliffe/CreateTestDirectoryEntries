@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.DirectoryServices;
 using System.Security.Cryptography.X509Certificates;
 using DirectoryCertChecker;
@@ -21,32 +22,65 @@ namespace CreateTestDirectoryEntries
         {
             const int maxValidityDays = 365;
             const int warningPeriodInDays = 90;
-            const int numberOfCertsToWriteInEachBase = 200;
+            const int numberOfCertsToWriteInEachBase = 10;
 
             var certCount = 0;
             var expiringCertCount = 0;
             var expiredCertCount = 0;
+            var closeOrRecentlyExpired = 0;
 
             var server = "192.168.1.230";
-            List<string> baseDNs = new List<string> { "OU = Test Users1,O = Red Kestrel", "OU = Test Users2,O = Red Kestrel" };
-      
+            var rootDN = "O = Red Kestrel";
+
+            //List<string> baseDNs = new List<string> { "OU = Test Users1,O = Red Kestrel", "OU = Test Users2,O = Red Kestrel" };
+            var baseDNs = new List<string> {"OU = Test Users1", "OU = Test Users2"};
+
             var reportWriter = new ReportWriter(warningPeriodInDays);
 
             reportWriter.RemoveReportFile();
             reportWriter.WriteHeader();
 
-            foreach (string baseDn in baseDNs)
+            var rootDnEntry =
+                new DirectoryEntry("LDAP://" + server + "/" + rootDN)
+                {
+                    Username = "CN=admin,O=Red Kestrel",
+                    Password = "Top111Secret",
+                    AuthenticationType = AuthenticationTypes.None
+                };
+            rootDnEntry.RefreshCache();
+
+            foreach (var baseDn in baseDNs)
             {
+                // Remove entries from previous run
+                var baseDnEntry =
+                    new DirectoryEntry("LDAP://" + server + "/" + baseDn + "," + rootDN)
+                    {
+                        Username = "CN=admin,O=Red Kestrel",
+                        Password = "Top111Secret",
+                        AuthenticationType = AuthenticationTypes.None
+                    };
+
+                // Remove the OU crated and populated from the previous run.
+                baseDnEntry.DeleteTree();
+                baseDnEntry.CommitChanges();
+
+                // Create the OU.
+                try
+                {
+                    var objOu = rootDnEntry.Children.Add(baseDn,
+                        "OrganizationalUnit");
+                    objOu.CommitChanges();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error:   Create failed.");
+                    Console.WriteLine("         {0}", e.Message);
+                    return;
+                }
+
                 for (var i = 0; i < numberOfCertsToWriteInEachBase; i++)
                     try
                     {
-                        var rootEntry =
-                            new DirectoryEntry("LDAP://" + server + "/" + baseDn)
-                            {
-                                Username = "CN=admin,O=Red Kestrel",
-                                Password = "Top111Secret",
-                                AuthenticationType = AuthenticationTypes.None
-                            };
                         var name = GenerateRandomName();
 
                         var r = new Random();
@@ -55,16 +89,31 @@ namespace CreateTestDirectoryEntries
                         var cert = GenerateSelfSignedCertificate(name, name, validityPeriodInDays);
                         var data = cert.RawData;
 
-                        var userEntry = rootEntry.Children.Add($"CN=Test--{name}-{i}", "user");
+                        var userEntry = baseDnEntry.Children.Add($"CN=Test--{name}-{i}", "user");
                         userEntry.Properties["userCertificate"].Insert(0, data);
                         userEntry.CommitChanges();
-                        rootEntry.CommitChanges();
                         certCount += 1;
+                        var minutesDiff = (cert.NotAfter.ToUniversalTime() - DateTime.Now.ToUniversalTime())
+                            .TotalMinutes;
+                        if ((minutesDiff > 0) & (minutesDiff < 60))
+                        {
+                            closeOrRecentlyExpired += 1;
+                            Console.WriteLine(
+                                $"{cert.Subject} is close to expiry; only {minutesDiff} minutes away ({cert.NotAfter})");
+                        }
+                        if ((minutesDiff < 0) & (minutesDiff > -60))
+                        {
+                            Console.WriteLine(
+                                $"{cert.Subject} recently expired; only {Math.Abs(minutesDiff)} minutes ago ({cert.NotAfter})");
+                            closeOrRecentlyExpired += 1;
+                        }
                         if (cert.NotAfter.ToUniversalTime() < DateTime.UtcNow)
                             expiredCertCount += 1;
                         else if (validityPeriodInDays <= warningPeriodInDays)
                             expiringCertCount += 1;
+
                         reportWriter.WriteRecord(userEntry.Name, cert);
+                        Debug.Assert(reportWriter.ExpiringCerts == expiringCertCount);
                     }
                     catch (Exception ex)
                     {
@@ -74,15 +123,14 @@ namespace CreateTestDirectoryEntries
             Console.WriteLine($"Wrote {certCount} certs to AD");
             Console.WriteLine($"{expiredCertCount} EXPIRED CERTS");
             Console.WriteLine($"{expiringCertCount} EXPIRING CERTS");
-
-            
-            
+            Console.WriteLine($"{closeOrRecentlyExpired} ARE CLOSE TO EXPIRY OR RECENTLY EXPIRED");
         }
 
         public static X509Certificate2 GenerateSelfSignedCertificate(string subjectName, string issuerName,
             int validityPeriodInDays)
 
         {
+            Console.WriteLine($"requested validityPeriodInDays: {validityPeriodInDays}");
             const string signatureAlgorithm = "SHA256withRSA";
 
 
