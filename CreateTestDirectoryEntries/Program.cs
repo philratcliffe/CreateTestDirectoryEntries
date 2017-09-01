@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.DirectoryServices;
 using System.Security.Cryptography.X509Certificates;
 using DirectoryCertChecker;
@@ -22,13 +21,9 @@ namespace CreateTestDirectoryEntries
         {
             const int maxValidityDays = 365;
             const int warningPeriodInDays = 90;
-            const int numberOfCertsToWriteInEachBase = 10;
+            const int numberOfCertsToWriteInEachBase = 200;
 
             var certCount = 0;
-            var expiringCertCount = 0;
-            var expiredCertCount = 0;
-            var closeOrRecentlyExpired = 0;
-
             var server = "192.168.1.230";
             var rootDN = "O = Red Kestrel";
 
@@ -60,7 +55,7 @@ namespace CreateTestDirectoryEntries
                         AuthenticationType = AuthenticationTypes.None
                     };
 
-                // Remove the OU crated and populated from the previous run.
+                // Remove the OU subtree created and populated from the previous run.
                 baseDnEntry.DeleteTree();
                 baseDnEntry.CommitChanges();
 
@@ -73,8 +68,8 @@ namespace CreateTestDirectoryEntries
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Error:   Create failed.");
-                    Console.WriteLine("         {0}", e.Message);
+                    Console.WriteLine("Error: Create failed.");
+                    Console.WriteLine("{0}", e.Message);
                     return;
                 }
 
@@ -84,7 +79,7 @@ namespace CreateTestDirectoryEntries
                         var name = GenerateRandomName();
 
                         var r = new Random();
-                        var validityPeriodInDays = r.Next(-100, maxValidityDays);
+                        var validityPeriodInDays = r.Next(-90, maxValidityDays);
 
                         var cert = GenerateSelfSignedCertificate(name, name, validityPeriodInDays);
                         var data = cert.RawData;
@@ -93,27 +88,7 @@ namespace CreateTestDirectoryEntries
                         userEntry.Properties["userCertificate"].Insert(0, data);
                         userEntry.CommitChanges();
                         certCount += 1;
-                        var minutesDiff = (cert.NotAfter.ToUniversalTime() - DateTime.Now.ToUniversalTime())
-                            .TotalMinutes;
-                        if ((minutesDiff > 0) & (minutesDiff < 60))
-                        {
-                            closeOrRecentlyExpired += 1;
-                            Console.WriteLine(
-                                $"{cert.Subject} is close to expiry; only {minutesDiff} minutes away ({cert.NotAfter})");
-                        }
-                        if ((minutesDiff < 0) & (minutesDiff > -60))
-                        {
-                            Console.WriteLine(
-                                $"{cert.Subject} recently expired; only {Math.Abs(minutesDiff)} minutes ago ({cert.NotAfter})");
-                            closeOrRecentlyExpired += 1;
-                        }
-                        if (cert.NotAfter.ToUniversalTime() < DateTime.UtcNow)
-                            expiredCertCount += 1;
-                        else if (validityPeriodInDays <= warningPeriodInDays)
-                            expiringCertCount += 1;
-
                         reportWriter.WriteRecord(userEntry.Name, cert);
-                        Debug.Assert(reportWriter.ExpiringCerts == expiringCertCount);
                     }
                     catch (Exception ex)
                     {
@@ -121,9 +96,8 @@ namespace CreateTestDirectoryEntries
                     }
             }
             Console.WriteLine($"Wrote {certCount} certs to AD");
-            Console.WriteLine($"{expiredCertCount} EXPIRED CERTS");
-            Console.WriteLine($"{expiringCertCount} EXPIRING CERTS");
-            Console.WriteLine($"{closeOrRecentlyExpired} ARE CLOSE TO EXPIRY OR RECENTLY EXPIRED");
+            Console.WriteLine($"{reportWriter.ExpiredCerts} EXPIRED CERTS");
+            Console.WriteLine($"{reportWriter.ExpiringCerts} EXPIRING CERTS");
         }
 
         public static X509Certificate2 GenerateSelfSignedCertificate(string subjectName, string issuerName,
@@ -159,8 +133,15 @@ namespace CreateTestDirectoryEntries
             certificateGenerator.SetIssuerDN(issuerDn);
             certificateGenerator.SetSubjectDN(subjectDn);
 
-            var notBefore = DateTime.UtcNow.Date;
+            var notBefore = DateTime.UtcNow;
             var notAfter = notBefore.AddDays(validityPeriodInDays);
+
+            // Add 2 hours so we still have the same validity period when we calculate it in ReportWriter;
+            // and also so the counts outputed here match the counts shown by DirectoryCertChecker, 
+            // at least for a couple of hours after running this.
+            notAfter = notAfter.AddMinutes(120.0);
+
+
             certificateGenerator.SetNotBefore(notBefore);
             certificateGenerator.SetNotAfter(notAfter);
 

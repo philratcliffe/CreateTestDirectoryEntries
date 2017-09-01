@@ -20,6 +20,7 @@
 #endregion
 
 using System;
+using System.Globalization;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -34,16 +35,16 @@ namespace DirectoryCertChecker
     {
         private const string ReportFilename = @"certificates.csv";
         private readonly int _warningPeriodInDays;
-        public int CertsWritten { get; private set; } = 0;
-        public int ExpiredCerts { get; private set; } = 0;
-        public int ExpiringCerts { get; private set; } = 0;
-
 
 
         internal ReportWriter(int warningPeriodInDays)
         {
             _warningPeriodInDays = warningPeriodInDays;
         }
+
+        public int CertsWritten { get; private set; }
+        public int ExpiredCerts { get; private set; }
+        public int ExpiringCerts { get; private set; }
 
         internal void RemoveReportFile()
         {
@@ -81,13 +82,13 @@ namespace DirectoryCertChecker
             if (cert != null)
             {
                 var daysToExpiry = cert.NotAfter.ToUniversalTime().Subtract(DateTime.UtcNow).Days;
-                
+
                 record.CertificateDn = cert.Subject;
                 record.SerialNumber = cert.SerialNumber;
-                record.ExpiryDate = cert.NotAfter.ToShortDateString();
+                record.ExpiryDate = cert.NotAfter.ToString(CultureInfo.CurrentCulture);
                 record.Days = daysToExpiry.ToString();
                 if (cert.NotAfter.ToUniversalTime() < DateTime.UtcNow)
-                { 
+                {
                     record.ExpiryStatus = "EXPIRED";
                     ExpiredCerts += 1;
                 }
@@ -95,16 +96,16 @@ namespace DirectoryCertChecker
                 {
                     record.ExpiryStatus = "EXPIRING";
                     ExpiringCerts += 1;
-                    
                 }
                 else
+                {
                     record.ExpiryStatus = "OK";
+                }
             }
 
             WriteRecord(record);
             if (cert != null)
                 CertsWritten += 1;
-
         }
     }
 }
