@@ -22,12 +22,10 @@ namespace CreateTestDirectoryEntries
             const int maxValidityDays = 365;
             const int warningPeriodInDays = 90;
             const int numberOfCertsToWriteInEachBase = 200;
+            const string server = "192.168.1.230";
+            const string rootDn = "O = Red Kestrel";
 
             var certCount = 0;
-            var server = "192.168.1.230";
-            var rootDN = "O = Red Kestrel";
-
-            //List<string> baseDNs = new List<string> { "OU = Test Users1,O = Red Kestrel", "OU = Test Users2,O = Red Kestrel" };
             var baseDNs = new List<string> {"OU = Test Users1", "OU = Test Users2"};
 
             var reportWriter = new ReportWriter(warningPeriodInDays);
@@ -36,7 +34,7 @@ namespace CreateTestDirectoryEntries
             reportWriter.WriteHeader();
 
             var rootDnEntry =
-                new DirectoryEntry("LDAP://" + server + "/" + rootDN)
+                new DirectoryEntry("LDAP://" + server + "/" + rootDn)
                 {
                     Username = "CN=admin,O=Red Kestrel",
                     Password = "Top111Secret",
@@ -46,20 +44,20 @@ namespace CreateTestDirectoryEntries
 
             foreach (var baseDn in baseDNs)
             {
-                // Remove entries from previous run
+                // Remove entries from previous run. I do this by deleting the baseDN container
+                // and all its children. I then recreate the baseDN container.
+                // Would be better to delete only the children, but not sure how to do that.
                 var baseDnEntry =
-                    new DirectoryEntry("LDAP://" + server + "/" + baseDn + "," + rootDN)
+                    new DirectoryEntry("LDAP://" + server + "/" + baseDn + "," + rootDn)
                     {
                         Username = "CN=admin,O=Red Kestrel",
                         Password = "Top111Secret",
                         AuthenticationType = AuthenticationTypes.None
                     };
-
-                // Remove the OU subtree created and populated from the previous run.
                 baseDnEntry.DeleteTree();
                 baseDnEntry.CommitChanges();
 
-                // Create the OU.
+                // Recreate the baseDN.
                 try
                 {
                     var objOu = rootDnEntry.Children.Add(baseDn,
@@ -136,24 +134,17 @@ namespace CreateTestDirectoryEntries
             var notBefore = DateTime.UtcNow;
             var notAfter = notBefore.AddDays(validityPeriodInDays);
 
-            // Add 2 hours so we still have the same validity period when we calculate it in ReportWriter;
-            // and also so the counts outputed here match the counts shown by DirectoryCertChecker, 
+            // Add 2 hours so we still have the same validity status when we calculate it in ReportWriter;
+            // and also so the counts displayed by this app match the counts when we run DirectoryCertChecker, 
             // at least for a couple of hours after running this.
             notAfter = notAfter.AddMinutes(120.0);
 
-
             certificateGenerator.SetNotBefore(notBefore);
             certificateGenerator.SetNotAfter(notAfter);
-
             certificateGenerator.SetPublicKey(subjectKeyPair.Public);
-
-
             var certificate = certificateGenerator.Generate(signatureFactory);
-
-
             var x509 = new X509Certificate2(DotNetUtilities.ToX509Certificate(certificate));
             x509.FriendlyName = subjectName;
-
             return x509;
         }
 
