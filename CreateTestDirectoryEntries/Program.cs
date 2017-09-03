@@ -21,7 +21,7 @@ namespace CreateTestDirectoryEntries
         {
             const int maxValidityDays = 365;
             const int warningPeriodInDays = 90;
-            const int numberOfCertsToWriteInEachBase = 200;
+            const int numberOfCertsToWriteInEachBase = 1;
             const string server = "192.168.1.230";
             const string rootDn = "O = Red Kestrel";
 
@@ -33,64 +33,64 @@ namespace CreateTestDirectoryEntries
             reportWriter.RemoveReportFile();
             reportWriter.WriteHeader();
 
-            var rootDnEntry =
-                new DirectoryEntry("LDAP://" + server + "/" + rootDn)
-                {
-                    Username = "CN=admin,O=Red Kestrel",
-                    Password = "Top111Secret",
-                    AuthenticationType = AuthenticationTypes.None
-                };
-            rootDnEntry.RefreshCache();
-
-            foreach (var baseDn in baseDNs)
+            using (var rootDnEntry =
+                new DirectoryEntry("LDAP://" + server + "/" + rootDn))
             {
-                // Remove entries from previous run. I do this by deleting the baseDN container
-                // and all its children. I then recreate the baseDN container.
-                // Would be better to delete only the children, but not sure how to do that.
-                var baseDnEntry =
-                    new DirectoryEntry("LDAP://" + server + "/" + baseDn + "," + rootDn)
+                rootDnEntry.Username = "CN=admin,O=Red Kestrel";
+                rootDnEntry.Password = "Top111Secret";
+                rootDnEntry.AuthenticationType = AuthenticationTypes.None;
+
+                rootDnEntry.RefreshCache();
+
+                foreach (var baseDn in baseDNs)
+                    // Remove entries from previous run. I do this by deleting the baseDN container
+                    // and all its children. I then recreate the baseDN container.
+                    // Would be easier to delete only the children, but not sure how to do that.
+                    using (var baseDnEntry =
+                        new DirectoryEntry("LDAP://" + server + "/" + baseDn + "," + rootDn))
                     {
-                        Username = "CN=admin,O=Red Kestrel",
-                        Password = "Top111Secret",
-                        AuthenticationType = AuthenticationTypes.None
-                    };
-                baseDnEntry.DeleteTree();
-                baseDnEntry.CommitChanges();
+                        baseDnEntry.Username = "CN=admin,O=Red Kestrel";
+                        baseDnEntry.Password = "Top111Secret";
+                        baseDnEntry.AuthenticationType = AuthenticationTypes.None;
 
-                // Recreate the baseDN.
-                try
-                {
-                    var objOu = rootDnEntry.Children.Add(baseDn,
-                        "OrganizationalUnit");
-                    objOu.CommitChanges();
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("Error: Create failed.");
-                    Console.WriteLine("{0}", e.Message);
-                    return;
-                }
+                        baseDnEntry.DeleteTree();
+                        baseDnEntry.CommitChanges();
 
-                for (var i = 0; i < numberOfCertsToWriteInEachBase; i++)
-                    try
-                    {
-                        var name = GenerateRandomName();
+                        // Recreate the baseDN.
+                        try
+                        {
+                            var objOu = rootDnEntry.Children.Add(baseDn,
+                                "OrganizationalUnit");
+                            objOu.CommitChanges();
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("Error: Create failed.");
+                            Console.WriteLine("{0}", e.Message);
+                            return;
+                        }
 
-                        var r = new Random();
-                        var validityPeriodInDays = r.Next(-90, maxValidityDays);
+                        for (var i = 0; i < numberOfCertsToWriteInEachBase; i++)
+                            try
+                            {
+                                var name = GenerateRandomName();
 
-                        var cert = GenerateSelfSignedCertificate(name, name, validityPeriodInDays);
-                        var data = cert.RawData;
+                                var r = new Random();
+                                var validityPeriodInDays = r.Next(-90, maxValidityDays);
 
-                        var userEntry = baseDnEntry.Children.Add($"CN=Test--{name}-{i}", "user");
-                        userEntry.Properties["userCertificate"].Insert(0, data);
-                        userEntry.CommitChanges();
-                        certCount += 1;
-                        reportWriter.WriteRecord(userEntry.Name, cert);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex);
+                                var cert = GenerateSelfSignedCertificate(name, name, validityPeriodInDays);
+                                var data = cert.RawData;
+
+                                var userEntry = baseDnEntry.Children.Add($"CN=Test--{name}-{i}", "user");
+                                userEntry.Properties["userCertificate"].Insert(0, data);
+                                userEntry.CommitChanges();
+                                certCount += 1;
+                                reportWriter.WriteRecord(userEntry.Name, cert);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex);
+                            }
                     }
             }
             Console.WriteLine($"Wrote {certCount} certs to AD");
