@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.DirectoryServices;
 using System.Security.Cryptography.X509Certificates;
-using DirectoryCertChecker;
 using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
@@ -21,7 +20,7 @@ namespace CreateTestDirectoryEntries
         {
             const int maxValidityDays = 365;
             const int warningPeriodInDays = 90;
-            const int numberOfCertsToWriteInEachBase = 1;
+            const int numberOfCertsToWriteInEachBase = 10;
             const string server = "192.168.1.230";
             const string rootDn = "O = Red Kestrel";
 

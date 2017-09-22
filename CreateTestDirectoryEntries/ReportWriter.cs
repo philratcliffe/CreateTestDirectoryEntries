@@ -26,7 +26,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using CsvHelper;
 
-namespace DirectoryCertChecker
+namespace CreateTestDirectoryEntries
 {
     /// <summary>
     ///     Provides a set of methods for deleting and creating reports.

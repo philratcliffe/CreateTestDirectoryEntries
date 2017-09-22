@@ -17,7 +17,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endregion
 
-namespace DirectoryCertChecker
+namespace CreateTestDirectoryEntries
 {
     internal class ReportRecord
     {
