@@ -45,6 +45,7 @@ namespace CreateTestDirectoryEntries
                     // Remove entries from previous run. I do this by deleting the baseDN container
                     // and all its children. I then recreate the baseDN container.
                     // Would be easier to delete only the children, but not sure how to do that.
+                {
                     using (var baseDnEntry =
                         new DirectoryEntry("LDAP://" + server + "/" + baseDn + "," + rootDn))
                     {
@@ -70,6 +71,7 @@ namespace CreateTestDirectoryEntries
                         }
 
                         for (var i = 0; i < numberOfCertsToWriteInEachBase; i++)
+                        {
                             try
                             {
                                 var name = GenerateRandomName();
@@ -90,7 +92,9 @@ namespace CreateTestDirectoryEntries
                             {
                                 Console.WriteLine(ex);
                             }
+                        }
                     }
+                }
             }
             Console.WriteLine($"Wrote {certCount} certs to AD");
             Console.WriteLine($"{reportWriter.ExpiredCerts} EXPIRED CERTS");
@@ -104,7 +108,6 @@ namespace CreateTestDirectoryEntries
             Console.WriteLine($"requested validityPeriodInDays: {validityPeriodInDays}");
             const string signatureAlgorithm = "SHA256withRSA";
 
-
             var randomGenerator = new CryptoApiRandomGenerator();
             var random = new SecureRandom(randomGenerator);
 
@@ -114,16 +117,13 @@ namespace CreateTestDirectoryEntries
             ISignatureFactory signatureFactory =
                 new Asn1SignatureFactory(signatureAlgorithm, issuerKeyPair.Private, random);
 
-
             var certificateGenerator = new X509V3CertificateGenerator();
             certificateGenerator.AddExtension(X509Extensions.ExtendedKeyUsage.Id, true,
                 new ExtendedKeyUsage(KeyPurposeID.IdKPServerAuth));
 
-
             var serialNumber =
                 BigIntegers.CreateRandomInRange(BigInteger.One, BigInteger.ValueOf(long.MaxValue), random);
             certificateGenerator.SetSerialNumber(serialNumber);
-
 
             var subjectDn = new X509Name("CN=" + subjectName);
             var issuerDn = new X509Name("CN=" + issuerName);
