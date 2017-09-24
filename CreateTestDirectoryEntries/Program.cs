@@ -19,6 +19,7 @@ namespace CreateTestDirectoryEntries
         private static void Main()
         {
             const int maxValidityDays = 365;
+            const int minValidityInDays = -90;
             const int warningPeriodInDays = 90;
             const int numberOfCertsToWriteInEachBase = 10;
             const string server = "192.168.1.230";
@@ -77,7 +78,7 @@ namespace CreateTestDirectoryEntries
                                 var name = GenerateRandomName();
 
                                 var r = new Random();
-                                var validityPeriodInDays = r.Next(-90, maxValidityDays);
+                                var validityPeriodInDays = r.Next(minValidityInDays, maxValidityDays);
 
                                 var cert = GenerateSelfSignedCertificate(name, name, validityPeriodInDays);
                                 var data = cert.RawData;
