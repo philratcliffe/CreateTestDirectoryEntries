@@ -12,29 +12,25 @@ using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Utilities;
 using Org.BouncyCastle.X509;
 
+
 namespace CreateTestDirectoryEntries
 {
     internal class Program
     {
         private static void Main()
         {
-            const int maxValidityDays = 365;
-            const int minValidityInDays = -90;
-            const int warningPeriodInDays = 90;
-            const int numberOfCertsToWriteInEachBase = 10;
-            const string server = "192.168.1.230";
-            const string rootDn = "O = Red Kestrel";
+            
 
             var certCount = 0;
             var baseDNs = new List<string> {"OU = Test Users1", "OU = Test Users2"};
 
-            var reportWriter = new ReportWriter(warningPeriodInDays);
+            var reportWriter = new ReportWriter(Constants.WarningPeriodInDays);
 
             reportWriter.RemoveReportFile();
             reportWriter.WriteHeader();
 
             using (var rootDnEntry =
-                new DirectoryEntry("LDAP://" + server + "/" + rootDn))
+                new DirectoryEntry("LDAP://" + Constants.Server + "/" + Constants.RootDn))
             {
                 rootDnEntry.Username = "CN=admin,O=Red Kestrel";
                 rootDnEntry.Password = "Top111Secret";
@@ -48,7 +44,7 @@ namespace CreateTestDirectoryEntries
                     // Would be easier to delete only the children, but not sure how to do that.
                 {
                     using (var baseDnEntry =
-                        new DirectoryEntry("LDAP://" + server + "/" + baseDn + "," + rootDn))
+                        new DirectoryEntry("LDAP://" + Constants.Server + "/" + baseDn + "," + Constants.RootDn))
                     {
                         baseDnEntry.Username = "CN=admin,O=Red Kestrel";
                         baseDnEntry.Password = "Top111Secret";
@@ -71,14 +67,14 @@ namespace CreateTestDirectoryEntries
                             return;
                         }
 
-                        for (var i = 0; i < numberOfCertsToWriteInEachBase; i++)
+                        for (var i = 0; i < Constants.NumberOfCertsToWriteInEachBase; i++)
                         {
                             try
                             {
                                 var name = GenerateRandomName();
 
                                 var r = new Random();
-                                var validityPeriodInDays = r.Next(minValidityInDays, maxValidityDays);
+                                var validityPeriodInDays = r.Next(Constants.MinValidityInDays, Constants.MaxValidityDays);
 
                                 var cert = GenerateSelfSignedCertificate(name, name, validityPeriodInDays);
                                 var data = cert.RawData;
@@ -176,13 +172,13 @@ namespace CreateTestDirectoryEntries
 
             var surname = new List<string>();
             surname.Add("Turtle");
-            surname.Add("Nutters");
+            surname.Add("Eagle");
             surname.Add("Rattlebag");
             surname.Add("Cornfoot");
-            surname.Add("Jelly");
+            surname.Add("Good");
             surname.Add("Piggs");
-            surname.Add("Demon");
-            surname.Add("Legg");
+            surname.Add("Duck");
+            surname.Add("Dublin");
             surname.Add("Dwyer");
             surname.Add("Smart");
 
