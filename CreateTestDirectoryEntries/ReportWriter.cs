@@ -42,9 +42,9 @@ namespace CreateTestDirectoryEntries
             _warningPeriodInDays = warningPeriodInDays;
         }
 
-        public int CertsWritten { get; private set; }
-        public int ExpiredCerts { get; private set; }
-        public int ExpiringCerts { get; private set; }
+        internal int CertsWritten { get; private set; }
+        internal int ExpiredCerts { get; private set; }
+        internal int ExpiringCerts { get; private set; }
 
         internal void RemoveReportFile()
         {
