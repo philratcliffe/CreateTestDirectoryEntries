@@ -144,7 +144,7 @@ namespace CreateTestDirectoryEntries
             return x509;
         }
 
-        public static AsymmetricCipherKeyPair GeneratePublicPrivateKeyPair()
+        internal static AsymmetricCipherKeyPair GeneratePublicPrivateKeyPair()
         {
             var keyGenerationParameters =
                 new KeyGenerationParameters(new SecureRandom(new CryptoApiRandomGenerator()), 2048);
@@ -154,7 +154,7 @@ namespace CreateTestDirectoryEntries
             return keyPair;
         }
 
-        public static string GenerateRandomName()
+        internal static string GenerateRandomName()
         {
             var random = new Random();
 
