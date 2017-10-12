@@ -1,3 +1,3 @@
 # CreateTestDirectoryEntries
 
-Creates test users that have a userCertificate attribute in Active Directory. 
+CreateTestDirectoryEntries is a .NET console application that creates test user entries in Active Directory. Each entry created has a unique userCertificate with a random expiration date.
