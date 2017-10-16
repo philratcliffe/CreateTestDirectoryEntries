@@ -19,9 +19,9 @@ namespace CreateTestDirectoryEntries
     {
         private static void Main()
         {
-            
-
             var certCount = 0;
+
+            // The locations we will create the users in
             var baseDNs = new List<string> {"OU = Test Users1", "OU = Test Users2"};
 
             var reportWriter = new ReportWriter(Constants.WarningPeriodInDays);
@@ -41,7 +41,7 @@ namespace CreateTestDirectoryEntries
                 foreach (var baseDn in baseDNs)
                     // Remove entries from previous run. I do this by deleting the baseDN container
                     // and all its children. I then recreate the baseDN container.
-                    // Would be easier to delete only the children, but not sure how to do that.
+                    // Would be easier to delete only the children, but I'm not sure how to do that.
                 {
                     using (var baseDnEntry =
                         new DirectoryEntry("LDAP://" + Constants.Server + "/" + baseDn + "," + Constants.RootDn))
@@ -98,6 +98,14 @@ namespace CreateTestDirectoryEntries
             Console.WriteLine($"{reportWriter.ExpiringCerts} EXPIRING CERTS");
         }
 
+
+        /// <summary>
+        /// Generates a self-signed certificate that has the values passed in.
+        /// </summary>
+        /// <param name="subjectName">The requested subject for the certificate</param>
+        /// <param name="issuerName">The requested subject for the certificate</param>
+        /// <param name="validityPeriodInDays">The requested validity period for the certificate</param>
+        /// <returns>An X509 Certificate as an X509Certificate2 object</returns>
         public static X509Certificate2 GenerateSelfSignedCertificate(string subjectName, string issuerName,
             int validityPeriodInDays)
 
