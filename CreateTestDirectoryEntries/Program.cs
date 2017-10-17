@@ -105,7 +105,7 @@ namespace CreateTestDirectoryEntries
         /// <param name="subjectName">The requested subject for the certificate</param>
         /// <param name="issuerName">The requested subject for the certificate</param>
         /// <param name="validityPeriodInDays">The requested validity period for the certificate</param>
-        /// <returns>An X509 Certificate as an X509Certificate2 object</returns>
+        /// <returns>An X509 certificate as an X509Certificate2 object</returns>
         public static X509Certificate2 GenerateSelfSignedCertificate(string subjectName, string issuerName,
             int validityPeriodInDays)
 
@@ -162,6 +162,10 @@ namespace CreateTestDirectoryEntries
             return keyPair;
         }
 
+        /// <summary>
+        /// Generates a silly name by combining a randomly selected a first and second name.
+        /// </summary>
+        /// <returns>A silly name</returns>
         internal static string GenerateRandomName()
         {
             var random = new Random();
