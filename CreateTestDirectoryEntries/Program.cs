@@ -12,7 +12,6 @@ using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Utilities;
 using Org.BouncyCastle.X509;
 
-
 namespace CreateTestDirectoryEntries
 {
     internal class Program
@@ -74,7 +73,8 @@ namespace CreateTestDirectoryEntries
                                 var name = GenerateRandomName();
 
                                 var r = new Random();
-                                var validityPeriodInDays = r.Next(Constants.MinValidityInDays, Constants.MaxValidityDays);
+                                var validityPeriodInDays =
+                                    r.Next(Constants.MinValidityInDays, Constants.MaxValidityDays);
 
                                 var cert = GenerateSelfSignedCertificate(name, name, validityPeriodInDays);
                                 var data = cert.RawData;
@@ -98,9 +98,8 @@ namespace CreateTestDirectoryEntries
             Console.WriteLine($"{reportWriter.ExpiringCerts} EXPIRING CERTS");
         }
 
-
         /// <summary>
-        /// Generates a self-signed certificate that has the values passed in.
+        ///     Generates a self-signed certificate that has the values passed in.
         /// </summary>
         /// <param name="subjectName">The requested subject for the certificate</param>
         /// <param name="issuerName">The requested subject for the certificate</param>
@@ -152,6 +151,10 @@ namespace CreateTestDirectoryEntries
             return x509;
         }
 
+        /// <summary>
+        ///     Generates an RSA key pair with a 2048 bit key.
+        /// </summary>
+        /// <returns>An RSA key pair</returns>
         internal static AsymmetricCipherKeyPair GeneratePublicPrivateKeyPair()
         {
             var keyGenerationParameters =
@@ -163,7 +166,7 @@ namespace CreateTestDirectoryEntries
         }
 
         /// <summary>
-        /// Generates a silly name by combining a randomly selected a first and second name.
+        ///     Generates a silly name by combining a randomly selected a first and second name.
         /// </summary>
         /// <returns>A silly name</returns>
         internal static string GenerateRandomName()
